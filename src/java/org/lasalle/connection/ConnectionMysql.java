@@ -3,8 +3,10 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package org.lasalle.connection;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
+
 /**
  *
  * @author sebastian_hdz_gtz
@@ -12,15 +14,36 @@ import java.sql.DriverManager;
 public class ConnectionMysql {
     Connection conn;
     
+    // Método para leer variables de entorno en la nube o usar las locales por defecto
+    private static String env(String key, String def) {
+        String value = System.getenv(key);
+        if (value == null || value.isBlank()) {
+            value = System.getProperty(key);
+        }
+        return (value == null || value.isBlank()) ? def : value;
+    }
+
     public Connection open(){
-        String user = "root";
-        String password = "Sebastianoso206";
-        String bdName = "healthBlood";
-        String url = "jdbc:mysql://127.0.0.1:3306/"+bdName;
-        String parametros = "?allowPublicKeyRetrieval=true&useSSL=false&useUnicode=true&characterEncoding=utf-8";
+        // Aquí declaramos las variables. Si no existen en la nube, usa las de tu Mac.
+        String host     = env("DB_HOST", "127.0.0.1");
+        String port     = env("DB_PORT", "3306");
+        String bdName   = env("DB_NAME", "healthBlood");
+        String user     = env("DB_USER", "root");
+        String password = env("DB_PASSWORD", "Sebastianoso206");
+        String sslMode  = env("DB_SSL_MODE", "DISABLED");
+        
+        String url = env("DB_URL", null);
+        if (url == null) {
+            url = "jdbc:mysql://" + host + ":" + port + "/" + bdName
+                + "?useUnicode=true&characterEncoding=utf-8&sslMode=" + sslMode;
+            if ("DISABLED".equalsIgnoreCase(sslMode)) {
+                url += "&allowPublicKeyRetrieval=true&useSSL=false";
+            }
+        }
+
         try{
             Class.forName("com.mysql.cj.jdbc.Driver");
-            conn = DriverManager.getConnection(url+parametros, user, password);
+            conn = DriverManager.getConnection(url, user, password);
             return conn;
         } catch(Exception e){
             e.printStackTrace();
